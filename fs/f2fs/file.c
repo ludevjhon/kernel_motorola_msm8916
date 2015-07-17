@@ -1328,6 +1328,7 @@ static int f2fs_ioc_getversion(struct file *filp, unsigned long arg)
 static int f2fs_ioc_start_atomic_write(struct file *filp)
 {
 	struct inode *inode = file_inode(filp);
+	int ret;
 
 	if (!inode_owner_or_capable(inode))
 		return -EACCES;
@@ -1337,9 +1338,12 @@ static int f2fs_ioc_start_atomic_write(struct file *filp)
 	if (f2fs_is_atomic_file(inode))
 		return 0;
 
-	set_inode_flag(F2FS_I(inode), FI_ATOMIC_FILE);
+	ret = f2fs_convert_inline_inode(inode);
+	if (ret)
+		return ret;
 
-	return f2fs_convert_inline_inode(inode);
+	set_inode_flag(F2FS_I(inode), FI_ATOMIC_FILE);
+	return 0;
 }
 
 static int f2fs_ioc_commit_atomic_write(struct file *filp)
@@ -1369,6 +1373,7 @@ static int f2fs_ioc_commit_atomic_write(struct file *filp)
 static int f2fs_ioc_start_volatile_write(struct file *filp)
 {
 	struct inode *inode = file_inode(filp);
+	int ret;
 
 	if (!inode_owner_or_capable(inode))
 		return -EACCES;
@@ -1376,9 +1381,12 @@ static int f2fs_ioc_start_volatile_write(struct file *filp)
 	if (f2fs_is_volatile_file(inode))
 		return 0;
 
-	set_inode_flag(F2FS_I(inode), FI_VOLATILE_FILE);
+	ret = f2fs_convert_inline_inode(inode);
+	if (ret)
+		return ret;
 
-	return f2fs_convert_inline_inode(inode);
+	set_inode_flag(F2FS_I(inode), FI_VOLATILE_FILE);
+	return 0;
 }
 
 static int f2fs_ioc_release_volatile_write(struct file *filp)
