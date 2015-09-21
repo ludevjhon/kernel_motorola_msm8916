@@ -526,6 +526,9 @@ static void __allocate_data_blocks(struct inode *inode, loff_t offset,
 		while (dn.ofs_in_node < end_offset && len) {
 			block_t blkaddr;
 
+			if (unlikely(f2fs_cp_error(sbi)))
+				goto sync_out;
+
 			blkaddr = datablock_addr(dn.node_page, dn.ofs_in_node);
 			if (blkaddr == NULL_ADDR || blkaddr == NEW_ADDR) {
 				if (__allocate_data_block(&dn))
@@ -568,6 +571,7 @@ static int f2fs_map_blocks(struct inode *inode, struct f2fs_map_blocks *map,
 {
 	unsigned int maxblocks = map->m_len;
 	struct dnode_of_data dn;
+	struct f2fs_sb_info *sbi = F2FS_I_SB(inode);
 	int mode = create ? ALLOC_NODE : LOOKUP_NODE_RA;
 	pgoff_t pgofs, end_offset;
 	int err = 0, ofs = 1;
@@ -601,6 +605,10 @@ static int f2fs_map_blocks(struct inode *inode, struct f2fs_map_blocks *map,
 
 	if (dn.data_blkaddr == NEW_ADDR || dn.data_blkaddr == NULL_ADDR) {
 		if (create) {
+			if (unlikely(f2fs_cp_error(sbi))) {
+				err = -EIO;
+				goto put_out;
+			}
 			err = __allocate_data_block(&dn);
 			if (err)
 				goto put_out;
@@ -654,6 +662,10 @@ get_next:
 
 		if (blkaddr == NEW_ADDR || blkaddr == NULL_ADDR) {
 			if (create) {
+				if (unlikely(f2fs_cp_error(sbi))) {
+					err = -EIO;
+					goto sync_out;
+				}
 				err = __allocate_data_block(&dn);
 				if (err)
 					goto sync_out;
@@ -1558,10 +1570,16 @@ static ssize_t f2fs_direct_IO(int rw, struct kiocb *iocb, struct iov_iter *iter,
 
 	trace_f2fs_direct_IO_enter(inode, offset, count, rw);
 
-	if (rw & WRITE)
+	if (rw & WRITE) {
 		__allocate_data_blocks(inode, offset, count);
+		if (unlikely(f2fs_cp_error(F2FS_I_SB(inode)))) {
+			err = -EIO;
+			goto out;
+		}
+	}
 
 	err = blockdev_direct_IO(rw, iocb, inode, iter, offset, get_data_block_dio);
+out:
 	if (err < 0 && (rw & WRITE))
 		f2fs_write_failed(mapping, offset + count);
 
