@@ -1592,6 +1592,9 @@ static int f2fs_ioc_gc(struct file *filp, unsigned long arg)
 	if (!count || count > F2FS_BATCH_GC_MAX_NUM)
 		return -EINVAL;
 
+	if (is_sbi_flag_set(sbi, SBI_NO_GC))
+		return -EINVAL;
+
 	for (i = 0; i < count; i++) {
 		if (!mutex_trylock(&sbi->gc_mutex))
 			break;
