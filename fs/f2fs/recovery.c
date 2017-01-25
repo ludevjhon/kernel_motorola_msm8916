@@ -454,8 +454,10 @@ retry_dn:
 			continue;
 		}
 
-		if ((start + 1) << PAGE_SHIFT > i_size_read(inode))
-			f2fs_i_size_write(inode, (start + 1) << PAGE_SHIFT);
+		if (!file_keep_isize(inode) &&
+			(i_size_read(inode) <= ((loff_t)start << PAGE_SHIFT)))
+			f2fs_i_size_write(inode,
+				(loff_t)(start + 1) << PAGE_SHIFT);
 
 		/*
 		 * dest is reserved block, invalidate src block
