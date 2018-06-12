@@ -66,6 +66,8 @@ enum {
 	Opt_fastboot,
 	Opt_extent_cache,
 	Opt_noinline_data,
+	Opt_reserved_mb,
+	Opt_reserved_fsuid,
 	Opt_err,
 };
 
@@ -89,6 +91,8 @@ static match_table_t f2fs_tokens = {
 	{Opt_fastboot, "fastboot"},
 	{Opt_extent_cache, "extent_cache"},
 	{Opt_noinline_data, "noinline_data"},
+	{Opt_reserved_mb, "reserved_mb=%u"},
+	{Opt_reserved_mb, "reserved_fsuid=%u"},
 	{Opt_err, NULL},
 };
 
@@ -272,6 +276,9 @@ static int parse_options(struct super_block *sb, char *options)
 	char *p, *name;
 	int arg = 0;
 
+	sbi->mount_opt.reserved_mb = DEFAULT_RESERVED_SIZE;
+	sbi->mount_opt.reserved_fsuid = DEFAULT_WRITE_FSUID;
+
 	if (!options)
 		return 0;
 
@@ -394,6 +401,16 @@ static int parse_options(struct super_block *sb, char *options)
 		case Opt_noinline_data:
 			clear_opt(sbi, INLINE_DATA);
 			break;
+		case Opt_reserved_mb:
+			if (match_int(&args[0], &arg))
+				return -EINVAL;
+			sbi->mount_opt.reserved_mb = arg;
+			break;
+		case Opt_reserved_fsuid:
+			if (match_int(&args[0], &arg))
+				return -EINVAL;
+			sbi->mount_opt.reserved_fsuid = arg;
+
 		default:
 			f2fs_msg(sb, KERN_ERR,
 				"Unrecognized mount option \"%s\" or missing value",
@@ -668,6 +685,11 @@ static int f2fs_show_options(struct seq_file *seq, struct dentry *root)
 	if (test_opt(sbi, EXTENT_CACHE))
 		seq_puts(seq, ",extent_cache");
 	seq_printf(seq, ",active_logs=%u", sbi->active_logs);
+
+	if (sbi->mount_opt.reserved_mb != 0)
+		seq_printf(seq, ",reserved=%uMB", sbi->mount_opt.reserved_mb);
+	if (sbi->mount_opt.reserved_fsuid != 0)
+		seq_printf(seq, ",fsuid=%u", sbi->mount_opt.reserved_fsuid);
 
 	return 0;
 }
