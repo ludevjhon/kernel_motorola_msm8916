@@ -613,6 +613,15 @@ config MMI_RAM_INFO
 	help
 	Provide mechanism to access RAM size and MR registers values via sysfs.
 
+config MSM_LIMITER
+	bool "MSM Frequency Limiter Driver"
+	default y
+	help
+	  The MSM Frequency Limiter Driver controls max frequency limit for each CPU
+	  to desired value on suspend/resume
+
+source "drivers/soc/qcom/memshare/Kconfig"
+
 config MMI_UNIT_INFO
 	default n
 	bool "Motorola Mobility Unit Info"
