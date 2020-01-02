@@ -613,6 +613,10 @@ config MMI_RAM_INFO
 	help
 	Provide mechanism to access RAM size and MR registers values via sysfs.
 
+config STATE_NOTIFIER
+        bool "State Notifier"
+	default y
+
 config MSM_LIMITER
 	bool "MSM Frequency Limiter Driver"
 	default y
