@@ -212,10 +212,8 @@ REG_TABLE_ENTRY g_registry_table[] =
    REG_VARIABLE( CFG_FRAG_THRESHOLD_NAME, WLAN_PARAM_Integer,
                  hdd_config_t, FragmentationThreshold,
                  VAR_FLAGS_OPTIONAL | VAR_FLAGS_RANGE_CHECK_ASSUME_DEFAULT,
-                 CFG_FRAG_THRESHOLD_DEFAULT,
-                 CFG_FRAG_THRESHOLD_MIN,
-                 CFG_FRAG_THRESHOLD_MAX ),
-
+                 0 , 0, 0),
+                 
    REG_VARIABLE( CFG_CALIBRATION_NAME, WLAN_PARAM_Integer,
                  hdd_config_t, Calibration,
                  VAR_FLAGS_OPTIONAL | VAR_FLAGS_RANGE_CHECK_ASSUME_DEFAULT,
