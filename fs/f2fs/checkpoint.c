@@ -803,7 +803,12 @@ int get_valid_checkpoint(struct f2fs_sb_info *sbi)
 
 	/* Sanity checking of checkpoint */
 	if (sanity_check_ckpt(sbi))
-		goto fail_no_cp;
+		goto free_fail_no_cp;
+
+	if (cur_page == cp1)
+		sbi->cur_cp_pack = 1;
+	else
+		sbi->cur_cp_pack = 2;
 
 	if (cp_blks <= 1)
 		goto done;
@@ -826,6 +831,9 @@ done:
 	f2fs_put_page(cp2, 1);
 	return 0;
 
+free_fail_no_cp:
+	f2fs_put_page(cp1, 1);
+	f2fs_put_page(cp2, 1);
 fail_no_cp:
 	kfree(sbi->ckpt);
 	return -EINVAL;
@@ -1079,7 +1087,7 @@ static void wait_on_all_pages_writeback(struct f2fs_sb_info *sbi)
 	for (;;) {
 		prepare_to_wait(&sbi->cp_wait, &wait, TASK_UNINTERRUPTIBLE);
 
-		if (!atomic_read(&sbi->nr_wb_bios))
+		if (!get_pages(sbi, F2FS_WB_CP_DATA))
 			break;
 
 		io_schedule_timeout(msecs_to_jiffies(5000));
@@ -1205,7 +1213,7 @@ static int do_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc)
 				le32_to_cpu(ckpt->checksum_offset)))
 				= cpu_to_le32(crc32);
 
-	start_blk = __start_cp_addr(sbi);
+	start_blk = __start_cp_next_addr(sbi);
 
 	/* write nat bits */
 	if (enabled_nat_bits(sbi, cpc)) {
@@ -1289,6 +1297,7 @@ static int do_checkpoint(struct f2fs_sb_info *sbi, struct cp_control *cpc)
 
 	clear_sbi_flag(sbi, SBI_IS_DIRTY);
 	clear_sbi_flag(sbi, SBI_NEED_CP);
+	__set_cp_next_pack(sbi);
 
 	/*
 	 * redirty superblock if metadata like node page or inode cache is
