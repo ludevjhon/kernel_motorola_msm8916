@@ -24,7 +24,6 @@
 #include <linux/blkdev.h>
 #include <linux/f2fs_fs.h>
 #include <linux/sysfs.h>
-#include <linux/cleancache.h>
 
 #include "f2fs.h"
 #include "node.h"
@@ -1334,7 +1333,6 @@ try_onemore:
 
 	sbi->cp_expires = round_jiffies_up(jiffies);
 
-	cleancache_init_fs(sb);
 	return 0;
 
 free_kobj:
